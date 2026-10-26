@@ -344,6 +344,24 @@ run_test() {
     fi
 }
 
+start_test() {
+    name=$1
+    path=$2
+
+    if ! start_json=$(curl_request --silent --show-error --fail --request POST "https://${api_domain}${path}"); then
+        echo_error "Unable to start the ${name} check."
+        exit "$error_code"
+    fi
+
+    case "$start_json" in
+        *'"done":1'*) ;;
+        *)
+            echo_error "Unable to start the ${name} check."
+            exit "$error_code"
+            ;;
+    esac
+}
+
 require_command curl
 require_command ping
 test_started=$(date +%s)
@@ -409,13 +427,16 @@ if [ "$verbose" = trace ]; then
 fi
 
 run_test DNS "https://${api_domain}/dnsleak/test/${id}?json=2"
+start_test ports "/open-port-check/test/${id}"
 run_test ports "https://${api_domain}/open-port-check/test/${id}?json"
 
 if [ -n "$ipv4" ]; then
+    start_test 'IPv4 blacklist' "/ip-blacklist-check/test/${id}/ipv4"
     run_test 'IPv4 blacklist' "https://${api_domain}/ip-blacklist-check/test/${id}/ipv4?json"
 fi
 
 if [ -n "$ipv6" ]; then
+    start_test 'IPv6 blacklist' "/ip-blacklist-check/test/${id}/ipv6"
     run_test 'IPv6 blacklist' "https://${api_domain}/ip-blacklist-check/test/${id}/ipv6?json"
 fi
 

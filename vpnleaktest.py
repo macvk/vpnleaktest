@@ -167,6 +167,17 @@ def run_test(client, test_id, route, fields=None, suffix='', query='json'):
     return response
 
 
+def start_test(client, test_id, route, suffix=''):
+    path = '{}/test/{}{}'.format(route, test_id, suffix)
+    response = client.json_request(path, {})
+
+    if not isinstance(response, dict):
+        raise RuntimeError('Invalid response while starting {} test'.format(route))
+
+    if response.get('error') or not response.get('done'):
+        raise RuntimeError(response['error'])
+
+
 def detect_address(client, family, test_id):
     url = '{}://{}.{}/myip/test/{}'.format(client.probe_scheme, family, client.probe_domain, test_id)
 
@@ -213,11 +224,14 @@ def run(args):
             addresses = {family: future.result() for family, future in futures.items()}
 
         run_dns_test(client, test_id, args.probes, args.parallel, args.interface)
+        start_test(client, test_id, '/open-port-check')
         run_test(client, test_id, '/open-port-check')
 
         for family in ('ipv4', 'ipv6'):
             if addresses[family]:
-                run_test(client, test_id, '/ip-blacklist-check', suffix='/{}'.format(family))
+                suffix = '/{}'.format(family)
+                start_test(client, test_id, '/ip-blacklist-check', suffix)
+                run_test(client, test_id, '/ip-blacklist-check', suffix=suffix)
 
         text_output = not args.json and not args.short
         result = final_result(client, test_id, text_output)

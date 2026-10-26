@@ -292,15 +292,24 @@ if defined interface (
     for /f "usebackq delims=" %%I in (`curl.exe --silent --show-error --fail --max-time "!timeout!" -6 "https://ipv6.%api_domain%/myip/test/%leak_id%" 2^>nul`) do set "ipv6=%%I"
 )
 
+call :start_test "/open-port-check/test/%leak_id%" "port"
+if errorlevel 1 exit /b 1
+
 call :request_test "https://%api_domain%/open-port-check/test/%leak_id%?txt" "port"
 if errorlevel 1 exit /b 1
 
 if defined ipv4 (
+    call :start_test "/ip-blacklist-check/test/%leak_id%/ipv4" "IPv4 blacklist"
+    if errorlevel 1 exit /b 1
+
     call :request_test "https://%api_domain%/ip-blacklist-check/test/%leak_id%/ipv4?txt" "IPv4 blacklist"
     if errorlevel 1 exit /b 1
 )
 
 if defined ipv6 (
+    call :start_test "/ip-blacklist-check/test/%leak_id%/ipv6" "IPv6 blacklist"
+    if errorlevel 1 exit /b 1
+
     call :request_test "https://%api_domain%/ip-blacklist-check/test/%leak_id%/ipv6?txt" "IPv6 blacklist"
     if errorlevel 1 exit /b 1
 )
@@ -309,6 +318,29 @@ call :request_final
 if errorlevel 1 exit /b 1
 
 if "%short_output%" == "1" set "test_result=!final_conclusion!"
+exit /b 0
+
+:start_test
+call :log_info "Starting %~2 check"
+
+if defined interface (
+    curl.exe --silent --show-error --fail --max-time "!timeout!" --interface "!interface!" --request POST "https://%api_domain%%~1" --output "!test_file!"
+) else (
+    curl.exe --silent --show-error --fail --max-time "!timeout!" --request POST "https://%api_domain%%~1" --output "!test_file!"
+)
+
+if errorlevel 1 (
+    call :fail "Unable to start the %~2 check."
+    exit /b 1
+)
+
+findstr /c:"done" "!test_file!" >nul
+
+if errorlevel 1 (
+    call :fail "Unable to start the %~2 check."
+    exit /b 1
+)
+
 exit /b 0
 
 :request_test

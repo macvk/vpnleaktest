@@ -313,6 +313,34 @@ func runTest(client *apiClient, testID, route, suffix string, fields url.Values)
 	return readTestResult(client, target, route, fields)
 }
 
+func startTest(client *apiClient, testID, route, suffix string) error {
+	target := fmt.Sprintf("%s/test/%s%s", route, testID, suffix)
+	data, err := client.request(target, url.Values{})
+
+	if err != nil {
+		return err
+	}
+
+	var response struct {
+		Error string `json:"error"`
+		Done  int    `json:"done"`
+	}
+
+	if err := decodeResponse(data, target, &response); err != nil {
+		return err
+	}
+
+	if response.Error != "" {
+		return errors.New(response.Error)
+	}
+
+	if response.Done != 1 {
+		return errors.New("test did not complete")
+	}
+
+	return nil
+}
+
 func runDNSTest(client *apiClient, testID string, probes, parallel int) error {
 	client.sendDNSProbes(testID, probes, parallel)
 	time.Sleep(1500 * time.Millisecond)
@@ -518,7 +546,11 @@ func main() {
 			fail(err)
 		}
 
-		err = runTest(client, testID, "/open-port-check", "", nil)
+		err = startTest(client, testID, "/open-port-check", "")
+
+		if err == nil {
+			err = runTest(client, testID, "/open-port-check", "", nil)
+		}
 
 		if err != nil {
 			fail(err)
@@ -527,6 +559,10 @@ func main() {
 		for _, family := range []string{"ipv4", "ipv6"} {
 			if addresses[family] == "" {
 				continue
+			}
+
+			if err := startTest(client, testID, "/ip-blacklist-check", "/"+family); err != nil {
+				fail(err)
 			}
 
 			if err := runTest(client, testID, "/ip-blacklist-check", "/"+family, nil); err != nil {
