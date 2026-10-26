@@ -213,7 +213,8 @@ def show_test_details(client, route, test_id):
     if not test_id or not test_id.isalnum():
         raise RuntimeError('Invalid test ID')
 
-    return client.request('{}/test/{}?embed=raw'.format(route, test_id))
+    format_name = 'raw2' if route == '/dnsleak' else 'raw'
+    return client.request('{}/test/{}?embed={}'.format(route, test_id, format_name))
 
 
 def run(args):
