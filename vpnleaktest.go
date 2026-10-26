@@ -527,12 +527,12 @@ func main() {
 		if err != nil {
 			fail(err)
 		}
-		format := "raw"
+		query := "embed=raw"
 		if selected[0].route == "/dnsleak" {
-			format = "raw2"
+			query = "raw"
 		}
 
-		data, err := client.request(selected[0].route+"/test/"+selected[0].id+"?embed="+format, nil)
+		data, err := client.request(selected[0].route+"/test/"+selected[0].id+"?"+query, nil)
 		if err != nil {
 			fail(err)
 		}

@@ -149,9 +149,9 @@ goto parse_arguments
 
 :arguments_parsed
 if defined details_id (
-    set "details_format=raw"
-    if "%details_route%" == "/dnsleak" set "details_format=raw2"
-    curl.exe --silent --show-error --fail --max-time "%timeout%" "https://%api_domain%%details_route%/test/%details_id%?embed=%details_format%"
+    set "details_query=embed=raw"
+    if "%details_route%" == "/dnsleak" set "details_query=raw"
+    curl.exe --silent --show-error --fail --max-time "%timeout%" "https://%api_domain%%details_route%/test/%details_id%?%details_query%"
     exit /b %errorlevel%
 )
 
