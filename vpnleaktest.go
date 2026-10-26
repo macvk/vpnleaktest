@@ -450,7 +450,7 @@ func main() {
 	flags := flag.NewFlagSet(os.Args[0], flag.ContinueOnError)
 	flags.SetOutput(os.Stderr)
 
-	var networkInterface, apiBase string
+	var networkInterface, apiBase, dnsDetails, openportDetails, blacklistDetails string
 	var probes, parallel, timeoutSeconds int
 	var shortOutput, jsonOutput, showVersion, showHelp bool
 	var watch watchOption
@@ -468,6 +468,9 @@ func main() {
 	flags.Var(&watch, "w", "repeat continuously in short mode (optional seconds, default: 0)")
 	flags.Var(&watch, "watch", "repeat continuously in short mode (optional seconds, default: 0)")
 	flags.BoolVar(&jsonOutput, "json", false, "print structured JSON")
+	flags.StringVar(&dnsDetails, "dnsleak", "", "show an existing DNS leak test result")
+	flags.StringVar(&openportDetails, "openport", "", "show an existing open-port test result")
+	flags.StringVar(&blacklistDetails, "blacklist", "", "show an existing blacklist test result")
 	flags.BoolVar(&showVersion, "version", false, "show version")
 	flags.BoolVar(&showHelp, "help", false, "show help")
 	flags.StringVar(&apiBase, "api-base", "https://"+apiDomain, "API base URL")
@@ -503,6 +506,33 @@ func main() {
 	if watch.enabled {
 		shortOutput = true
 		jsonOutput = false
+	}
+
+	details := []struct{ route, id string }{
+		{"/dnsleak", dnsDetails},
+		{"/open-port-check", openportDetails},
+		{"/ip-blacklist-check", blacklistDetails},
+	}
+	selected := details[:0]
+	for _, detail := range details {
+		if detail.id != "" {
+			selected = append(selected, detail)
+		}
+	}
+	if len(selected) > 1 {
+		fail(errors.New("choose only one detail option"))
+	}
+	if len(selected) == 1 {
+		client, err := newClient(apiBase, networkInterface, time.Duration(timeoutSeconds)*time.Second)
+		if err != nil {
+			fail(err)
+		}
+		data, err := client.request(selected[0].route+"/test/"+selected[0].id+"?txt", nil)
+		if err != nil {
+			fail(err)
+		}
+		fmt.Print(string(data))
+		return
 	}
 
 	for {

@@ -18,6 +18,8 @@ set "parallel=30"
 set "timeout=90"
 set "short_output=0"
 set "watch="
+set "details_route="
+set "details_id="
 set "test_file=%TEMP%\vpnleaktest-%RANDOM%-%RANDOM%-test.tmp"
 set "final_file=%TEMP%\vpnleaktest-%RANDOM%-%RANDOM%-final.tmp"
 
@@ -39,6 +41,9 @@ if /I "%~1" == "--watch" goto read_watch
 if /I "%~1" == "-v" goto read_verbose
 if /I "%~1" == "--verbose" goto read_verbose
 if /I "%~1" == "--log-file" goto read_log_file
+if /I "%~1" == "--dnsleak" goto read_dnsleak
+if /I "%~1" == "--openport" goto read_openport
+if /I "%~1" == "--blacklist" goto read_blacklist
 if /I "%~1" == "-h" goto show_help
 if /I "%~1" == "--help" goto show_help
 
@@ -121,7 +126,33 @@ shift
 shift
 goto parse_arguments
 
+:read_dnsleak
+set "details_route=/dnsleak"
+goto read_details_id
+
+:read_openport
+set "details_route=/open-port-check"
+goto read_details_id
+
+:read_blacklist
+set "details_route=/ip-blacklist-check"
+
+:read_details_id
+if "%~2" == "" (
+    call :argument_error "Option %~1 requires a test ID."
+    exit /b 2
+)
+set "details_id=%~2"
+shift
+shift
+goto parse_arguments
+
 :arguments_parsed
+if defined details_id (
+    curl.exe --silent --show-error --fail --max-time "%timeout%" "https://%api_domain%%details_route%/test/%details_id%?txt"
+    exit /b %errorlevel%
+)
+
 powershell -NoProfile -Command "if ($env:probes -notmatch '^[1-9][0-9]*$' -or [int]$env:probes -gt 100) { exit 1 }"
 
 if errorlevel 1 (

@@ -39,6 +39,8 @@ timeout=90
 short_output=0
 watch_interval=''
 watch_enabled=0
+details_route=''
+details_id=''
 
 usage() {
     cat <<EOF
@@ -54,6 +56,9 @@ Options:
   -v, --verbose LEVEL      Write diagnostics: info or trace
       --log-file FILE      Set the log path (implies --verbose info)
   -h, --help               Show this help
+      --dnsleak TEST_ID    Show an existing DNS leak test result
+      --openport TEST_ID   Show an existing open-port test result
+      --blacklist TEST_ID  Show an existing blacklist test result
 EOF
 }
 
@@ -113,6 +118,17 @@ while [ "$#" -gt 0 ]; do
         --log-file)
             [ "$#" -ge 2 ] || argument_error "Option --log-file requires a path."
             log_file=$2
+            shift 2
+            ;;
+        --dnsleak|--openport|--blacklist)
+            [ "$#" -ge 2 ] || argument_error "Option $1 requires a test ID."
+            [ -z "$details_route" ] || argument_error "Choose only one detail option."
+            case "$1" in
+                --dnsleak) details_route='/dnsleak' ;;
+                --openport) details_route='/open-port-check' ;;
+                --blacklist) details_route='/ip-blacklist-check' ;;
+            esac
+            details_id=$2
             shift 2
             ;;
         -h|--help)
@@ -363,6 +379,13 @@ start_test() {
 }
 
 require_command curl
+
+if [ -n "$details_route" ]; then
+    case "$details_id" in ''|*[!a-zA-Z0-9]*) argument_error "Invalid test ID." ;; esac
+    curl_request --silent --show-error --fail "https://${api_domain}${details_route}/test/${details_id}?txt"
+    exit $?
+fi
+
 require_command ping
 test_started=$(date +%s)
 check_internet_connection
