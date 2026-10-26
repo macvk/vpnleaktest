@@ -382,9 +382,7 @@ require_command curl
 
 if [ -n "$details_route" ]; then
     case "$details_id" in ''|*[!a-zA-Z0-9]*) argument_error "Invalid test ID." ;; esac
-    details_query='embed=raw'
-    [ "$details_route" = '/dnsleak' ] && details_query=raw
-    curl_request --silent --show-error --fail "https://${api_domain}${details_route}/test/${details_id}?${details_query}"
+    curl_request --silent --show-error --fail "https://${api_domain}${details_route}/test/${details_id}?raw"
     exit $?
 fi
 
