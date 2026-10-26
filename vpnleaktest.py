@@ -53,6 +53,9 @@ def parse_args():
     parser.add_argument('-s', '--short', action='store_true', help='print a one-line result')
     parser.add_argument('-w', '--watch', metavar='SECONDS', nargs='?', const=0, type=bounded_integer(0, None, 'must be zero or a positive integer'), help='repeat continuously in short mode (default interval: 0)')
     parser.add_argument('--json', action='store_true', help='print structured JSON')
+    parser.add_argument('--dnsleak', metavar='TEST_ID', help='show an existing DNS leak test result')
+    parser.add_argument('--openport', metavar='TEST_ID', help='show an existing open-port test result')
+    parser.add_argument('--blacklist', metavar='TEST_ID', help='show an existing blacklist test result')
     parser.add_argument('--api-base', default=DEFAULT_API, help=argparse.SUPPRESS)
     parser.add_argument('--version', action='version', version=VERSION)
     return parser.parse_args()
@@ -206,6 +209,13 @@ def final_result(client, test_id, text_output=False):
     return response
 
 
+def show_test_details(client, route, test_id):
+    if not test_id or not test_id.isalnum():
+        raise RuntimeError('Invalid test ID')
+
+    return client.request('{}/test/{}?txt'.format(route, test_id))
+
+
 def run(args):
     if args.interface:
         try:
@@ -215,6 +225,23 @@ def run(args):
 
     started = time.monotonic()
     client = BashwsClient(args.api_base, args.interface, args.timeout)
+    requested_details = [
+        ('/dnsleak', args.dnsleak),
+        ('/open-port-check', args.openport),
+        ('/ip-blacklist-check', args.blacklist),
+    ]
+    requested_details = [item for item in requested_details if item[1]]
+
+    if len(requested_details) > 1:
+        raise SystemExit('Choose only one detail option.')
+
+    if requested_details:
+        route, test_id = requested_details[0]
+        try:
+            print(show_test_details(client, route, test_id), end='')
+            return 0
+        except (HTTPError, URLError, RuntimeError, ValueError, OSError) as error:
+            raise SystemExit('Unable to retrieve test details: {}'.format(error))
 
     try:
         test_id = client.test_id()
