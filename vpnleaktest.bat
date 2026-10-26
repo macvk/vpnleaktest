@@ -149,7 +149,7 @@ goto parse_arguments
 
 :arguments_parsed
 if defined details_id (
-    curl.exe --silent --show-error --fail --max-time "%timeout%" "https://%api_domain%%details_route%/test/%details_id%?txt"
+    curl.exe --silent --show-error --fail --max-time "%timeout%" "https://%api_domain%%details_route%/test/%details_id%?embed=raw"
     exit /b %errorlevel%
 )
 

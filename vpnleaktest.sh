@@ -382,7 +382,7 @@ require_command curl
 
 if [ -n "$details_route" ]; then
     case "$details_id" in ''|*[!a-zA-Z0-9]*) argument_error "Invalid test ID." ;; esac
-    curl_request --silent --show-error --fail "https://${api_domain}${details_route}/test/${details_id}?txt"
+    curl_request --silent --show-error --fail "https://${api_domain}${details_route}/test/${details_id}?embed=raw"
     exit $?
 fi
 

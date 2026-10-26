@@ -527,7 +527,7 @@ func main() {
 		if err != nil {
 			fail(err)
 		}
-		data, err := client.request(selected[0].route+"/test/"+selected[0].id+"?txt", nil)
+		data, err := client.request(selected[0].route+"/test/"+selected[0].id+"?embed=raw", nil)
 		if err != nil {
 			fail(err)
 		}

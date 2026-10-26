@@ -213,7 +213,7 @@ def show_test_details(client, route, test_id):
     if not test_id or not test_id.isalnum():
         raise RuntimeError('Invalid test ID')
 
-    return client.request('{}/test/{}?txt'.format(route, test_id))
+    return client.request('{}/test/{}?embed=raw'.format(route, test_id))
 
 
 def run(args):
